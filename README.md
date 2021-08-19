@@ -12,6 +12,11 @@ The major difference of Log4CL 1.1.x version from 1.0.x is the Emacs/Slime integ
 module, called **Log4Slime**. This document is written with assumption that you will
 have Log4Slime loaded and enabled in Emacs.
 
+**NOTE** - A regression in Emacs 27.1 causes a ‘wrong-type-error’ when
+activating a popup menu with a mouse right-click.  This is fixed in
+the 28.0 development tree.  See issue [Issue #37](https://github.com/sharplispers/log4cl/issues/37)
+for a workaround.
+
 ## <a id="sec-1-1" name="sec-1-1"></a>Installation
 
 Log4CL is available from QuickLisp. To load it use `(ql:quickload :log4cl)`
