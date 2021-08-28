@@ -19,7 +19,8 @@
 
 (defgroup log4slime nil
   "Customization for log4slime Slime integration"
-  :prefix "log4slime-")
+  :prefix "log4slime-"
+  :group 'slime)
 
 (defface log4slime-package-face
   '((((background dark)) (:foreground "#7474FFFFFFFF" :background "DimGray")) ; ~ cyan
@@ -88,7 +89,7 @@ argument, the parent effective log level (string)")
         ((or (null level)
              (eq level :unset)) (nth 0 log4slime-other-command-names))
         ((eq level :reset) (nth 1 log4slime-other-command-names))
-        (error "Invalid level %S" level)))
+        (t (error "Invalid level %S" level))))
 
 ;; Logger info is used to communicate information about a logger both from Emacs to Lisp
 ;; and the other way around. The first three elements below are used to identify or find
@@ -392,9 +393,6 @@ specializers.
 
 
 (defun log4slime-lisp-current-defun ()
-  "foobar :after strings strings crap")
-
-(defun log4slime-lisp-current-defun ()
   "Extract the current defun name in the manner that is similar
 to log4slime auto-naming of log categories. Handles methods, with
 normal and constant EQL specializers, as well as CL-DEF /
@@ -545,7 +543,8 @@ EMACS-HELPER."
               (end (line-end-position))
               (prop 'face)
               (object nil)
-              next)
+              next
+              prev)
           (while (/= start end)
             (setq next (next-single-property-change start prop object end)
                   prev (get-text-property start prop object))
@@ -869,9 +868,7 @@ but less specific then TRACE, and DEBU5..DEBU9 come after TRACE.
 To make them show up in the menu, but you can customize the
 variable `log4slime-menu-levels'.
 "
-  nil
-  nil
-  log4slime-mode-map
+  :keymap log4slime-mode-map
   (when log4slime-mode
     (log4slime-check-connection t)))
 
@@ -890,7 +887,7 @@ global instead of local to files with `log4slime-mode' active"
   (interactive)
   (if (member major-mode '(lisp-mode slime-repl-mode))
       (log4slime-mode 1)
-    (when (interactive-p)
+    (when (called-interactively-p 'interactive)
       (message "This buffer does not support log4slime mode"))))
 
 (define-globalized-minor-mode global-log4slime-mode log4slime-mode turn-on-log4slime-mode)
@@ -1111,7 +1108,8 @@ menu, by customizing `log4slime-menu-levels' variable`
                    (ncol (length cols))
                    (col 0)
                    (nrows 0)
-                   is-root-p)
+                   is-root-p
+                   window)
               ;; (log-expr choices)
               ;; (log-expr cols)
               ;; (create temp buffer)
@@ -1158,8 +1156,7 @@ menu, by customizing `log4slime-menu-levels' variable`
                 (setq mode-line-format nil))
 
               (unless (eq expert 'expert)
-                (let* ((window-min-height 2)
-                       (window-tree))
+                (let ((window-min-height 2))
                   ;; (log-expr nrows (window-height)
                   ;;           (- (window-height) 1 nrows))
 
