@@ -1,6 +1,7 @@
 ;;; -*- Mode: Emacs-Lisp; -*-
 ;;;
 ;;; Copyright (c) 2012, Max Mikhanosha. All rights reserved.
+;;; Copyright (c) 2021, Hugh Daschbach
 ;;;
 ;;; This file is licensed to You under the Apache License, Version 2.0
 ;;; (the "License"); you may not use this file except in compliance
@@ -13,9 +14,11 @@
 ;;; See the License for the specific language governing permissions and
 ;;; limitations under the License.
 
-(require 'slime)
-(require 'font-lock)
 (require 'cl-lib)
+
+(declare-function log4slime-popup-menu "log4cl.el")
+(defvar log4slime-logger-keys)
+(defvar log4slime-menu-levels)
 
 (defgroup log4slime nil
   "Customization for log4slime Slime integration"
@@ -745,15 +748,6 @@ to the first log statement"
             (goto-char next)))))))
 
 
-(eval-after-load 'slime-repl
-  '(defadvice slime-repl-emit (around highlight-logging-category activate compile)
-     (with-current-buffer (slime-output-buffer)
-       (if log4slime-mode
-           (let ((start (marker-position slime-output-end)))
-             (setq ad-return-value ad-do-it)
-             (log4slime-highlight-log-message start (marker-position slime-output-end)))
-         (setq ad-return-value ad-do-it)))))
-
 (defun log4slime-make-menubar-menu ()
   (let ((C '(log4slime-check-connection)))
     ;; First level is dynamic
@@ -854,24 +848,6 @@ to the first log statement"
                        (process-put conn 'log4slime-loaded t)
                        t))))))))))
 
-(define-minor-mode log4slime-mode
-  "\\<log4slime-mode-map>\
-Support mode integrating log4slime logging system with SLIME
-
-\\[log4slime-level-selection]		- Set log level fast via keyboard
-
-Only \"standard\" log levels show up in the menu and keyboard bindings.
-
-There are also 8 extra debug levels, DEBU1..DEBU4 are more specific then DEBUG
-but less specific then TRACE, and DEBU5..DEBU9 come after TRACE.
-
-To make them show up in the menu, but you can customize the
-variable `log4slime-menu-levels'.
-"
-  :keymap log4slime-mode-map
-  (when log4slime-mode
-    (log4slime-check-connection t)))
-
 (defun log4slime-redefine-menus (&optional global)
   "Redefine log4slime menus. If GLOBAL is true, make dropdown menu
 global instead of local to files with `log4slime-mode' active"
@@ -881,17 +857,6 @@ global instead of local to files with `log4slime-mode' active"
     (easy-menu-define log4slime-menu log4slime-mode-map "Change Log4CL log levels" (log4slime-make-menubar-menu))))
 
 (log4slime-redefine-menus)
-
-(defun turn-on-log4slime-mode ()
-  "Turn on `log4slime-mode' in the current buffer if appropriate"
-  (interactive)
-  (if (member major-mode '(lisp-mode slime-repl-mode))
-      (log4slime-mode 1)
-    (when (called-interactively-p 'interactive)
-      (message "This buffer does not support log4slime mode"))))
-
-(define-globalized-minor-mode global-log4slime-mode log4slime-mode turn-on-log4slime-mode)
-
 
 (defun log4slime-format-eff-level (info)
   "Format effective log level of a logger, marked with asterisk
@@ -1305,4 +1270,6 @@ menu, by customizing `log4slime-menu-levels' variable`
     (when (eq done 'help)
       (describe-function 'log4slime-level-selection))))
 
-(provide 'log4slime)
+(provide 'log4cl)
+
+;;; log4cl.el ends here
