@@ -1,6 +1,7 @@
 ;;; -*- Mode: Lisp; Syntax: ANSI-Common-Lisp; Base: 10 -*-
 ;;;
 ;;; Copyright (c) 2012, Max Mikhanosha. All rights reserved.
+;;; Copyright (c) 2021, Hugh Daschbach
 ;;;
 ;;; This file is licensed to You under the Apache License, Version 2.0
 ;;; (the "License"); you may not use this file except in compliance
@@ -16,4 +17,7 @@
 (asdf:defsystem "log4slime"
   :version "1.1.3"
   :depends-on ("log4cl" "swank")
-  :components ((:file "src/log4slime")))
+  :components ((:module "src"
+                :components
+                ((:file "log4elisp")
+                 (:file "log4slime" :depends-on  ("log4elisp"))))))
