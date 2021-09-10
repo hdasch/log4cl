@@ -580,10 +580,10 @@ log4slime-xxx-logger variables with returned info."
           (let ((result (log4slime-eval log4slime-backend
                          `(get-buffer-log-menu
                            :package ,pkg :file ,file :defun ,current-defun))))
-            (setq log4slime-root-logger (first result)
-                  log4slime-package-logger (second result)
-                  log4slime-file-logger (log4slime-fix-relative-file (third result))
-                  log4slime-defun-logger (fourth result))))))))
+            (setq log4slime-root-logger (cl-first result)
+                  log4slime-package-logger (cl-second result)
+                  log4slime-file-logger (log4slime-fix-relative-file (cl-third result))
+                  log4slime-defun-logger (cl-fourth result))))))))
 
 (defun log4slime-logger-id-at-mouse (event)
   "Find the package,file,and logger name at the site of the mouse click,
@@ -591,7 +591,7 @@ returning them in the plist form, suitable for Lisp side
 EMACS-HELPER."
   (let* ((point (if (featurep 'xemacs) (event-point event)
                   (posn-point (event-end event))))
-         (window (if (featurep 'xemacs) (event-window event) (caadr event)))
+         (window (if (featurep 'xemacs) (event-window event) (cl-caadr event)))
          (buffer (window-buffer window))
          (click-face (get-text-property point 'face buffer))
          package file rest
@@ -658,7 +658,7 @@ EMACS-HELPER."
            (result (and log4slime-popup-logger
                         (log4slime-popup-menu event))))
       (when result
-        (log4slime-set-level 'log4slime-popup-logger (first result))))))
+        (log4slime-set-level 'log4slime-popup-logger (cl-first result))))))
 
 (defun log4slime-length= (seq n)
   "Return (= (length SEQ) N)."
@@ -988,10 +988,10 @@ if its inherited from parent, and apply font property"
 
 
 (defun log4slime-format (&rest args)
-  (if (not (listp (first args)))
+  (if (not (listp (cl-first args)))
       (apply 'format args)
     (let ((text (apply 'format (cl-rest args))))
-      (add-text-properties 0 (length text) (first args) text)
+      (add-text-properties 0 (length text) (cl-first args) text)
       text)))
 
 (defun log4slime-format-fontified-logger-type (info &optional notypep noupcase root-name)
@@ -1169,12 +1169,12 @@ menu, by customizing `log4slime-menu-levels' variable`
                       (cw3 (nth 2 (nth col cols))))
                   (when (zerop col)
                     (insert-char ?  6))
-                  (insert (first e))
-                  (insert-char ?  (- cw1 (length (first e))))
-                  (insert (second e))
-                  (insert-char ?  (- cw2 (length (second e))))
-                  (insert (third e))
-                  (insert-char ?  (- cw3 (length (third e))))
+                  (insert (cl-first e))
+                  (insert-char ?  (- cw1 (length (cl-first e))))
+                  (insert (cl-second e))
+                  (insert-char ?  (- cw2 (length (cl-second e))))
+                  (insert (cl-third e))
+                  (insert-char ?  (- cw3 (length (cl-third e))))
                   (cl-incf col)
                   (if (< col ncol)
                       (insert (make-string 10 ?\ ))
@@ -1295,10 +1295,10 @@ menu, by customizing `log4slime-menu-levels' variable`
                     (insert-char ?  6))
                   (let ((cw1 (nth 0 (nth col cols)))
                         (cw2 (nth 1 (nth col cols))))
-                    (insert (first e))
-                    (insert-char ?  (- cw1 (length (first e))))
-                    (insert (second e))
-                    (insert-char ?  (- cw2 (length (second e))))
+                    (insert (cl-first e))
+                    (insert-char ?  (- cw1 (length (cl-first e))))
+                    (insert (cl-second e))
+                    (insert-char ?  (- cw2 (length (cl-second e))))
                     (cl-incf col)
                     (if (< col ncol)
                         (insert (make-string 3 ?\ ))
