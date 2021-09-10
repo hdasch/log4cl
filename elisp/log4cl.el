@@ -66,6 +66,67 @@ logging event originated in"
   :group 'log4slime)
 
 
+;; Currently selected backend
+
+(defvar log4slime-backend nil
+  "Current backend, set by ‘log4slime-mode’ or ‘log4sly-mode’.")
+
+;; Generic backend functions
+
+(cl-defgeneric log4slime-eval (backend form)
+  "Wrapper around `slime-eval' that ignores errors on the lisp side")
+
+(cl-defgeneric log4slime-load-lisp-system (backend form)
+  "Load the lisp support system.")
+
+(cl-defgeneric log4slime-connected-p (backend)
+  "Return true if the backend connection is open.")
+
+(cl-defgeneric log4slime-current-package (backend)
+  "Return the common lisp package in the current context.
+If ‘slime-buffer-package’ or ‘sly-buffer-package’ (as
+appropriate) has a value then return that, otherwise search for
+and read an ‘in-package’ form.")
+
+(cl-defgeneric log4slime-symbol-at-point (backend)
+  "Return the name of symbol at point, otherwise nil.")
+
+(cl-defgeneric log4slime-sexp-at-point (backend)
+  "Return the sexp at point, otherwise nil.")
+
+(cl-defgeneric log4slime-analyze-xrefs (backend xrefs)
+  "Find common filenames in XREFS.
+Return a list of (SINGLE-LOCATION FILE-ALIST).
+SINGLE-LOCATION is true if all xrefs point to the same location.
+FILE-ALIST is an alist of the form ((FILENAME . (XREF ...) ...).")
+
+(cl-defgeneric log4slime-push-definition-stack (backend)
+  "Add point to the find-tag-marker-ring.")
+
+(cl-defgeneric log4slime-xref.location (backend xref)
+  "Access slot \"location\" of backend XREF struct CL-X.")
+
+(cl-defgeneric log4slime-current-connection (backend)
+  "Return the backend connection to use for lisp interaction.
+Return nil if there’s no connection.")
+
+(cl-defgeneric log4slime-show-xrefs (backend xrefs types symbol package)
+  "Show the results of an  XREF query.")
+
+(cl-defgeneric log4slime-pop-to-location (backend location &optional where)
+  "Go to source LOCATION (a file position).
+If WHERE is nil, in the current buffer.
+If WHERE is ’window, in a pop up buffer.
+If WHERE is ’frame, in pop up frame.
+For sly:
+WHERE may also be a cons of (WINDOW . METHOD) where WINDOW is the
+\"starting window\" and reconsider METHOD like above: If it is
+nil try to use WINDOW exclusively for showing the location,
+otherwise prevent that window from being reused when popping to a
+new window or frame.
+
+Sly also highlights the resulting sexp and returns the window.")
+
 ;; These are used for naming menu items and displaying, if any of them
 ;; change, (log4slime-redefine-menus) needs to be called. Could be made
 ;; defcustom later
@@ -232,8 +293,8 @@ argument, the parent effective log level (string)")
          (level (or level :unset)))
     ;; (log-expr info id level)
     (let ((result
-           (log4slime-eval `(log4slime:emacs-helper
-                          '(,@id :action :set :level ,level))))
+           (log4slime-eval log4slime-backend
+            `(emacs-helper '(,@id :action :set :level ,level))))
           (type (log4slime-logger-type id)))
       (with-current-buffer (get-buffer-create " *log4slime-message*")
         (erase-buffer)
@@ -258,14 +319,6 @@ argument, the parent effective log level (string)")
                   (t
                    (insert " set to level " (log4slime-format-eff-level info)))))
           (message "%s" (buffer-substring (point-min) (point-max))))))))
-
-(defun log4slime-eval (form)
-  "Wrapper around `slime-eval' that ignores errors on the lisp side"
-  (when (log4slime-check-connection)
-    ;; I swear it something in slime-eval screws with point sometimes
-    (save-excursion
-      (let ((slime-current-thread t))
-        (slime-eval `(cl:ignore-errors ,form))))))
 
 (defvar log4slime-goto-definition-window nil
   "Passed as WHERE to `slime-pop-to-location', can be 'WINDOW or 'FRAME too")
@@ -428,7 +481,7 @@ default `add-log-current-defun-function' for CL code"
             (forward-char 1))
 
         ;; find first word
-        (setq first-word (slime-symbol-at-point))
+        (setq first-word (log4slime-symbol-at-point log4slime-backend))
         (setq defp (cl-equalp first-word "def")
               methodp (string-match "defmethod$" first-word))
         (forward-sexp)
@@ -439,15 +492,16 @@ default `add-log-current-defun-function' for CL code"
           (save-excursion
             (goto-char (scan-sexps (point) -1))
             (if (not (looking-at "("))
-                (setq type (slime-symbol-at-point))
+                (setq type (log4slime-symbol-at-point log4slime-backend))
               (forward-char 1)
-              (setq type (slime-symbol-at-point))
+              (setq type (log4slime-symbol-at-point log4slime-backend))
               (when (cl-equalp type "method")
                 (ignore-errors
                   (while t
                     (goto-char (scan-sexps (scan-sexps (point) 2) -1))
                     (when (looking-at ":")
-                      (push (slime-symbol-at-point) qualifiers)))))))
+                      (push (log4slime-symbol-at-point log4slime-backend)
+                            qualifiers)))))))
           ;; we are now after type, before name
           (setq methodp (cl-equalp type "method")))
         ;; back to common case
@@ -457,15 +511,15 @@ default `add-log-current-defun-function' for CL code"
                   (save-excursion
                     (forward-char 1)
                     (goto-char (scan-sexps (scan-sexps (point) 1) -1))
-                    (slime-sexp-at-point))
-                (slime-sexp-at-point)))
+                    (log4slime-sexp-at-point log4slime-backend))
+                (log4slime-sexp-at-point log4slime-backend)))
         (goto-char (scan-sexps (scan-sexps (point) 2) -1))
         ;; now after name
         (if (not methodp) name
           (goto-char (scan-sexps (scan-sexps (point) 1) -1))
           (ignore-errors
             (while (looking-at ":")
-              (push (slime-symbol-at-point) qualifiers)
+              (push (log4slime-symbol-at-point log4slime-backend) qualifiers)
               (goto-char (scan-sexps (scan-sexps (point) 2) -1))))
           ;; now at the lambda list, descend into it
           (if (not (looking-at "(")) name
@@ -481,12 +535,15 @@ default `add-log-current-defun-function' for CL code"
                     ;; beginning of symbol
                     (goto-char (scan-sexps (scan-sexps (point) 2) -1))
                     (if (not (looking-at "("))
-                        (push (slime-symbol-at-point) specializers)
+                        (push (log4slime-symbol-at-point log4slime-backend)
+                              specializers)
                       ;; Could be an EQL specializer, down into it
                       (goto-char (scan-lists (point) 1 -1))
                       (goto-char (scan-sexps (scan-sexps (point) 1) -1))
                       ;; stop scanning specializers if not EQL
-                      (unless (cl-equalp (slime-symbol-at-point) "eql")
+                      (unless (cl-equalp
+                               (log4slime-symbol-at-point log4slime-backend)
+                               "eql")
                         (error ""))
                       ;; down into what it is
                       (goto-char (scan-sexps (scan-sexps (point) 2) -1))
@@ -494,10 +551,12 @@ default `add-log-current-defun-function' for CL code"
                       ;; only take it if its a constant, otherwise stop
                       (cond ((looking-at "'\\_<")
                              (forward-char 1)
-                             (slime-symbol-at-point)
-                             (push (slime-symbol-at-point) specializers))
+                             (log4slime-symbol-at-point log4slime-backend)
+                             (push (log4slime-symbol-at-point log4slime-backend)
+                                   specializers))
                             ((looking-at ":")
-                             (push (slime-symbol-at-point) specializers))
+                             (push (log4slime-symbol-at-point log4slime-backend)
+                                   specializers))
                             (t (error ""))))))
                 (forward-sexp 1)))
             (mapconcat #'identity
@@ -510,16 +569,16 @@ default `add-log-current-defun-function' for CL code"
 defun loggers based on current Emacs context. Sets the
 log4slime-xxx-logger variables with returned info."
   (save-excursion
-    (when (slime-connected-p)
-      (let ((pkg (slime-current-package))
+    (when (log4slime-connected-p log4slime-backend)
+      (let ((pkg (log4slime-current-package log4slime-backend))
             (file (buffer-file-name))
             (current-defun (ignore-errors
                              (funcall (or log4slime-current-defun-function
                                           'log4slime-lisp-current-defun)))))
         ;; (log-expr pkg file current-defun log4slime-root-logger)
         (when (null log4slime-root-logger)
-          (let ((result (log4slime-eval
-                         `(log4slime:get-buffer-log-menu
+          (let ((result (log4slime-eval log4slime-backend
+                         `(get-buffer-log-menu
                            :package ,pkg :file ,file :defun ,current-defun))))
             (setq log4slime-root-logger (first result)
                   log4slime-package-logger (second result)
@@ -594,12 +653,22 @@ EMACS-HELPER."
     ;; (log-expr id)
     (let* ((log4slime-popup-logger
             (log4slime-fix-relative-file
-             (log4slime-eval `(log4slime:emacs-helper
-                            '(,@id :action :info)))))
+             (log4slime-eval log4slime-backend
+              `(emacs-helper '(,@id :action :info)))))
            (result (and log4slime-popup-logger
                         (log4slime-popup-menu event))))
       (when result
         (log4slime-set-level 'log4slime-popup-logger (first result))))))
+
+(defun log4slime-length= (seq n)
+  "Return (= (length SEQ) N)."
+  (cl-etypecase seq
+    (list
+     (cond ((zerop n) (null seq))
+           ((let ((tail (nthcdr (1- n) seq)))
+              (and tail (null (cdr tail)))))))
+    (sequence
+     (= (length seq) n))))
 
 (defun log4slime-goto-definition (event)
   "Go to the definition where log statement comes from and scroll
@@ -609,25 +678,32 @@ to the first log statement"
     (let* ((name (log4slime-logger-rest id))
            (package (log4slime-logger-package id))
            (where log4slime-goto-definition-window)
-           (xrefs (log4slime-eval `(log4slime:emacs-helper
-                                 '(,@id :action :get-location)))))
+           (xrefs (log4slime-eval log4slime-backend
+                   `(emacs-helper '(,@id :action :get-location)))))
       ;; Pasted from `slime-edit-definition-cont'
-      (cl-destructuring-bind (1loc file-alist) (slime-analyze-xrefs xrefs)
+      (cl-destructuring-bind (1loc file-alist) (log4slime-analyze-xrefs
+                                                log4slime-backend xrefs)
         (cond ((null xrefs)
                (if name (error "No known definition for: %s (in %s)" name package)
                  (error "No definition found")))
               (1loc
-               (slime-push-definition-stack)
-               (slime-pop-to-location (slime-xref.location (car xrefs)) where)
+               (log4slime-push-definition-stack log4slime-backend)
+               (log4slime-pop-to-location
+                log4slime-backend
+                (log4slime-xref.location log4slime-backend
+                                         (car xrefs))
+                where)
                (let ((end (save-excursion (forward-sexp) (point))))
                  (when (re-search-forward "^[ \t]*\\((log:\\)" end t)
                    (goto-char (match-beginning 1)))))
-              ((slime-length= xrefs 1)  ; ((:error "..."))
-               (error "%s" (cadr (slime-xref.location (car xrefs)))))
+              ((log4slime-length= xrefs 1)  ; ((:error "..."))
+               (error "%s" (cadr (log4slime-xref.location
+                                  log4slime-backend
+                                  (car xrefs)))))
               (t
-               (slime-push-definition-stack)
-               (slime-show-xrefs file-alist 'definition name
-                                 package)))))))
+               (log4slime-push-definition-stack log4slime-backend)
+               (log4slime-show-xrefs log4slime-backend
+                file-alist 'definition name package)))))))
 
 (defvar log4slime-category-mouse-map (make-sparse-keymap))
 
@@ -811,8 +887,8 @@ to the first log statement"
   ;; weird, point in current buffer was moved on error, wondering what
   ;; is doing in?
   (save-excursion
-    (when (slime-connected-p)
-      (let* ((conn (slime-current-connection)))
+    (when (log4slime-connected-p log4slime-backend)
+      (let* ((conn (log4slime-current-connection log4slime-backend)))
         (when conn
           (let ((try (process-get conn 'log4slime-loaded)))
             (cond ((eq try t) t)
@@ -829,18 +905,15 @@ to the first log statement"
                                 (if from-mode 5 300))))
                    ;; mark it that we trying to do it
                    (process-put conn 'log4slime-loaded (float-time))
-                   (let* ((result (slime-eval
-                                   `(cl:multiple-value-bind
-                                     (ok err)
-                                     (cl:ignore-errors
-                                      (cl:setf (cl:get :log4slime :no-emacs-startup-message) t)
-                                      (asdf:load-system :log4slime))
-                                     (cl:if ok :ok (cl:princ-to-string err))))))
+                   (let* ((result (log4slime-load-lisp-system
+                                   log4slime-backend)))
                      ;; (log-expr result)
                      (if (not (eq :ok result))
                          (progn
                            (process-put conn 'log4slime-loaded (float-time))
-                           (message "Can't load log4slime lisp support: %s." result)
+                           (message "Can't load %s lisp support: %s."
+                                    (substring (symbol-name log4slime-backend) 1)
+                                    result)
                            nil)
                        ;; This hides Slime's "go forth and hack" MOTD
                        ;; on restart, so comment it out
