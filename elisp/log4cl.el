@@ -761,7 +761,8 @@ to the first log statement"
     (save-excursion
       (goto-char start)
       (while (< (point) end)
-        (if (not (eq 'slime-repl-output-face (get-text-property (point) 'face)))
+        (if (not (member (get-text-property (point) 'face)
+                         '(slime-repl-output-face sly-mrepl-output-face)))
             (goto-char (next-single-property-change (point) 'face nil end))
           (let ((next (next-single-property-change (point) 'face nil end))
                 (case-fold-search t))
