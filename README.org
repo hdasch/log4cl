@@ -27,9 +27,11 @@ the 28.0 development tree.  See issue [[https://github.com/sharplispers/log4cl/i
 
 ** Enabling Log4Slime
 
+To enable Log4Slime run the following in your Lisp:
+
 #+BEGIN_SRC common-lisp
-(ql:quickload :log4slime)
-(log4slime:install)
+(ql:quickload :log4cl.log4slime)
+(log4cl.log4slime:install)
 #+END_SRC
    
 You should get a message like this:
@@ -58,6 +60,35 @@ global-log4slime-mode= off/on a few times
 You can verify if log4slime is enabled, by looking for the Log4CL menu
 on top menubar in REPL and Lisp mode buffers, or by submitting a log
 statement from REPL and seeing output colorized.
+
+** Sly support
+
+As of version 1.1.4, Log4Slime supports Sly as well as Slime.  The
+minimal supported Emacs version is now 25.1.
+
+To enable Log4Sly run the following in your Lisp:
+
+#+BEGIN_SRC common-lisp
+(ql:quickload :log4cl.log4sly)
+(log4cl.log4sly:install)
+#+END_SRC
+
+You should get a message like this:
+
+#+BEGIN_EXAMPLE
+Wrote ~/quicklisp/log4sly-setup.el
+
+Add the following two statements to your ~/.emacs file
+------------------------------------------------------
+(load "~/quicklisp/log4sly-setup.el")
+(global-log4sly-mode 1)
+------------------------------------------------------
+#+END_EXAMPLE
+
+Like the instructions for installing Log4Slime, above, follow the
+instructions for modifying you ~/.emacs file.
+
+If you need to toggle Log4Sly mode, use =M-x global-log4sly-mode RET=.
 
 <<The Basics>>
 * Hello world
@@ -109,7 +140,7 @@ statement from REPL and seeing output colorized.
 
    [[file:./images/screenshot-11.png]]
 
-   Pressing "p" to select the package category shows [[effective log level]]
+   Pressing "p" to select the package [[category][category]] shows [[effective log level][effective log level]]
    and allows you to change like so
 
    [[file:./images/screenshot-10.png]]
@@ -142,7 +173,7 @@ statement from REPL and seeing output colorized.
   level for that specific function.
   
   That is because Log4CL logging macros, automatically determine the
-  [[category]] for logging, based on the context where log statement
+  [[category][category]] for logging, based on the context where log statement
   appears. In above example the function was defined in the package
   CL-USER and function name was HELLO, so the target category of any
   logging inside the function, was automatically =CL-USER.HELLO=
@@ -151,7 +182,7 @@ statement from REPL and seeing output colorized.
   putting one of the log statements inside of a =LABELS= or =FLET=
   forms, to see what happens.
 
-  Also note the farthest to the right in the logging [[category]]
+  Also note the farthest to the right in the logging [[category][category]]
   name, the more specific. The level for "hello" overrides that for
   "cl-user", which in turn overrides that of the root category.
 
@@ -181,7 +212,7 @@ statement from REPL and seeing output colorized.
 
   [[file:./images/screenshot-18.png]]
   
-  Log statements inside of methods, are using the [[category]] name of the 
+  Log statements inside of methods, are using the [[category][category]] name of the 
   generic function, extended with qualifier, and all non-T specializers.
 
   Try going to the source of the above methods by clicking on them. It should land
@@ -346,7 +377,7 @@ statement from REPL and seeing output colorized.
   sources of log messages, or more correctly entry points where log
   message enter the logging system.  Each call to a logging macro like
   =(log:debug ...)= operates on a specific logger object 
-  (See also [[naming]] section).
+  (See also [[naming][naming]] section).
   
   Logger's unique name is called "logger's category", or "category
   name". Loggers form a hierarchy, based on their category names,
@@ -367,7 +398,7 @@ statement from REPL and seeing output colorized.
   
   Each logger can have a [[level][log level]] threshold, or if its
   does not have one, it inherits one from its parent. To ensure that
-  for any logger, an [[effective log level]] can be determined, the ROOT
+  for any logger, an [[effective log level][effective log level]] can be determined, the ROOT
   logger always have a level.
 
   Loggers will only pass through messages, if logger's threshold level
