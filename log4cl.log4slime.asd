@@ -14,7 +14,7 @@
 ;;; See the License for the specific language governing permissions and
 ;;; limitations under the License.
 
-(asdf:defsystem "log4slime"
+(asdf:defsystem "log4cl.log4slime"
   :version "1.1.3"
   :depends-on ("log4cl" "swank")
   :components ((:module "src"

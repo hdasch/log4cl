@@ -24,7 +24,7 @@
     (save-excursion
       (cl-destructuring-bind (fn . args) form
         (let ((slime-current-thread t)
-              (fn-sym (intern (concat "log4slime:" (symbol-name fn)))))
+              (fn-sym (intern (concat "log4cl.log4slime:" (symbol-name fn)))))
           (slime-eval `(cl:ignore-errors (,fn-sym ,@args))))))))
 
 (cl-defmethod log4slime-load-lisp-system ((backend (eql :log4slime)))
@@ -32,7 +32,7 @@
                 (ok err)
                 (cl:ignore-errors
                  (cl:setf (cl:get :log4slime :no-emacs-startup-message) t)
-                 (asdf:load-system :log4slime))
+                 (asdf:load-system :log4cl.log4slime))
                 (cl:if ok :ok (cl:princ-to-string err)))))
 
 (cl-defmethod log4slime-connected-p ((backend (eql :log4slime)))
