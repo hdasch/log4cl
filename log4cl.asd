@@ -14,7 +14,7 @@
 ;;; limitations under the License.
 
 (asdf:defsystem "log4cl"
-  :version "1.1.3"
+  :version "1.1.4"
   :depends-on ("bordeaux-threads"
                #+sbcl "sb-posix") ; for SB-POSIX:GETPID in pattern-layout.lisp
   :components ((:module "src"
@@ -66,7 +66,7 @@
   (values))
 
 (asdf:defsystem "log4cl/syslog"
-  :version "1.1.3"
+  :version "1.1.4"
   :depends-on ("log4cl"
                #-sbcl "cl-syslog")
   :components ((:module "appender"
@@ -77,7 +77,7 @@
                              #-sbcl (:file "syslog-appender-cffi")))))
 
 (asdf:defsystem "log4cl/test"
-  :version "1.1.3"
+  :version "1.1.4"
   :depends-on ("log4cl" "stefil")
   :components ((:module "tests"
                 :serial t

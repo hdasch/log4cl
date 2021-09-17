@@ -15,7 +15,7 @@
 ;;; limitations under the License.
 
 (asdf:defsystem "log4cl.log4sly"
-  :version "1.1.3"
+  :version "1.1.4"
   :depends-on ("log4cl" "slynk")
   :components ((:module "src"
                 :components
