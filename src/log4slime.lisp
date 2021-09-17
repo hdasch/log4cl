@@ -14,8 +14,7 @@
 ;;; See the License for the specific language governing permissions and
 ;;; limitations under the License.
 
-(defpackage #:log4cl.slime
-  (:nicknames #:log4slime)
+(defpackage #:log4cl.log4slime
   (:use #:cl)
   (:import-from #:log4cl.elisp
                 #:*quicklisp-directory*
@@ -26,7 +25,7 @@
            #:*quicklisp-directory*
            #:*system-directory*))
 
-(in-package #:log4cl.slime)
+(in-package #:log4cl.log4slime)
 (log:package-options :shortest-nickname nil)
 
 ;;
